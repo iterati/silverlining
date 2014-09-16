@@ -1,0 +1,3 @@
+[submodule "fuzzywuzzy"]
+	path = fuzzywuzzy
+	url = git@github.com:iterati/fuzzywuzzy.git

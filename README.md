@@ -17,6 +17,11 @@ Clone the repo:
 Install the module:
 `pip install --editable .`
 
+Run it once to generate dotfiles (`~/.silverlining`):
+`silverlining`
+
+Enter your SoundCloud credentials in `~/.silverlining/config.json`
+
 Play music:
 `silverlining play feedme track patience`
 

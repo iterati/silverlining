@@ -1,9 +1,9 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name='silverlining',
     version='0.1',
-    py_modules=['silverlining'],
+    packages=['silverlining'],
     install_requires=[
         'click',
         'soundcloud',

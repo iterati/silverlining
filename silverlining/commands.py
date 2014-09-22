@@ -3,6 +3,9 @@ import shlex
 import sys
 
 from silverlining import (
+    parse_cli_arguments,
+    get_items,
+    get_interp,
     models,
     utils,
     vlc,
@@ -10,192 +13,129 @@ from silverlining import (
 
 
 COMMANDS = {}
-CATEGORIES = {
-    'track': 'track',
-    'tracks': 'track',
-    't': 'track',
-    'ts': 'track',
-    'playlist': 'playlist',
-    'playlists': 'playlist',
-    'p': 'playlist',
-    'ps': 'playlist',
-    'user': 'user',
-}
 
 
 class CommandError(Exception):
-    pass
+    def __init__(self, message):
+        self.message = message
 
 
-def command(abbrs, parser):
+def command(*abbrs):
     def decorator(func):
-        COMMANDS[func.__name__] = (func, parser)
+        COMMANDS[func.__name__] = func
         for abbr in abbrs:
-            COMMANDS[abbr] = func.__name__
-
+            COMMANDS[abbr] = func
         return func
     return decorator
 
 
-def parse_cmd(args):
-    args = list(args)
-    cmd = args.pop(0)
-
+def parse_cmd(cmd_in):
+    args = shlex.split(cmd_in)
+    cmd, args = args[0], args[1:]
     if cmd not in COMMANDS:
         raise CommandError("Command not recognized.")
-
-    if isinstance(COMMANDS[cmd], str):
-        cmd = COMMANDS[cmd]
-
-    cmd, parser = COMMANDS[cmd]
-    return cmd, parser(args)
+    return COMMANDS[cmd], args
 
 
-def parse_cmd_string(args_string):
-    args = shlex.split(args_string)
-    cmd, args = parse_cmd(args)
-    if cmd == search:
-        args = [cmd(*args)]
-        cmd = cli_search
-    elif cmd == play:
-        args = [cmd(*args)]
-        cmd = cli_play
-    return cmd, args
-
-
-def parse_cli_cmd(cmd):
-    cmd, args = parse_cmd(cmd)
-    if cmd == search:
-        args = [cmd(*args)]
-        cmd = cli_search
-    elif cmd == play:
-        args = [cmd(*args)]
-        cmd = cli_play
-    else:
-        raise CommandError("Only search and play are allowed from command line")
-    return cmd, args
-
-
-def _parse_single_arg(args):
-    return args[:1]
-
-
-def _parse_username_category_title(args):
-    if len(args) == 0:
-        raise CommandError("no arguments")
-
-    if args[0] in CATEGORIES:
-        if len(args) == 1:
-            raise CommandError("can't only query category")
-        elif len(args) == 2:
-            (category, title), username = args, None
+def parse_range(range):
+    ranges = range.split(',')
+    idxes = []
+    for r in ranges:
+        if '-' in r:
+            s, e = r.split('-')
+            if s == '.':
+                s = vlc.player.current_track.idx
+            if e == '.':
+                e = vlc.player.current_track.idx
+            idxes.extend(range(int(s), int(e) + 1))
+        elif r == '.':
+            idxes.append(vlc.player.current_track.idx)
         else:
-            category, username, title = args[:3]
-    else:
-        if len(args) == 1:
-            username, category, title = args[0], 'user', None
-        elif len(args) == 2:
-            (username, category), title = args, None
-        else:
-            username, category, title = args
+            idxes.append(int(r))
 
-    if category not in CATEGORIES:
-        raise CommandError("unrecognized category %s" % category)
-
-    return username, CATEGORIES[category], title
+    return idxes
 
 
-@command(['j'], _parse_single_arg)
-def jump(target):
+@command('q')
+def quit(args):
+    vlc.player._cmd_mode = False
+    return "Exit command mode", None
+
+
+@command('l', 'list')
+def list_playlist(args):
+    items = vlc.player.playlist
+    fmt = lambda x: "{:<12} {}".format(*x)
+    output = "Listing playlist:\n"
+    output += '\n'.join(map(fmt, enumerate(items)))
+    return output, None
+
+
+@command('j')
+def jump(args):
+    target = args[0]
     track = vlc.player.get_track(target)
     if not track:
-        return "Track not found"
+        return "Track not found", None
 
-    vlc.player.jump(track.plid)
-    return "Jumping to %s" % track
-
-
-@command(['s'], _parse_username_category_title)
-def search(username, category, title):
-    if category == 'user':
-        sys.stdout.write("Searching for users like %s.\n" % username)
-        items = models.User.get(username)
-    else:
-        user = models.User.get_one(username) if username else None
-
-        sys.stdout.write("Searching for %ss" % category)
-        if user:
-            sys.stdout.write(" by %s" % user['username'])
-        if title:
-            sys.stdout.write(" with title like %s" % title)
-        sys.stdout.write(".\n")
-
-        if category == 'track':
-            items = models.Track.get(title, user)
-        elif category == 'playlist':
-            items = models.Playlist.get(title, user)
-    return items
+    vlc.player.jump(track)
+    return "Jumping to %s" % track, None
 
 
-@command(['p'], _parse_username_category_title)
-def play(username, category, title):
-    user = models.User.get_one(username) if username else None
-
-    if category == 'user':
-        sys.stdout.write("Playing tracks by %s.\n" % user['username'])
-
-        tracks = user.tracks
-    elif category == 'track':
-        if utils.isint(title):
-            track = models.Track.get_one(title)
-            title = track['title']
-
-        sys.stdout.write("Playing tracks")
-        if user:
-            sys.stdout.write(" by %s" % user['username'])
-        if title:
-            sys.stdout.write(" with title like %s" % title)
-        sys.stdout.write(".\n")
-
-        tracks = models.Track.get(title, user)
-    elif category == 'playlist':
-        playlist = models.Playlist.get_one(title, user)
-
-        sys.stdout.write(
-            "Playing playlist %s (id: %s) by %s.\n" %
-            (playlist['title'], playlist['id'], playlist['user']['username'])
-        )
-
-        tracks = playlist.tracks
-    return tracks
+@command('s')
+def search(args):
+    username, category, query = parse_cli_arguments(args)
+    items = get_items(username, category, query)
+    fmt = lambda x: "{:<12} {}".format(*x)
+    output = "Searching " + get_interp(username, category, query) + ":\n"
+    output += "\n".join(map(fmt, enumerate(items)))
+    return output, items
 
 
-@command(['a'], _parse_username_category_title)
-def append(username, category, title):
-    tracks = play(username, category, title)
+@command('e')
+def enqueue(args):
+    if len(args) == 0:
+        raise CommandError("Enqueue takes one argument")
+
+    try:
+        idxes = parse_range(args[0])
+    except:
+        raise CommandError("Unable to parse range")
+
+    tracks = []
+    for i in idxes:
+        if i > len(vlc.player._cmd_cache):
+            raise CommandError("Range index out of range.")
+        item = vlc.player._cmd_cache[idx]
+        if item['kind'] == 'track':
+            tracks.append(item)
+        else:
+            tracks.extend(item.tracks)
+
     vlc.player.load_tracks(tracks)
+    return "Loaded %s tracks" % len(tracks), None
 
 
-def cmd_search(items):
-    fmt = lambda x: u'{:<12} {}'.format(x['id'], x)
-    return '\n'.join(map(fmt, list(items)[:25])) + '\n'
+@command('d')
+def delete(args):
+    if len(args) == 0:
+        raise CommandError("Delete takes one argument")
 
+    try:
+        ranges = parse_range(args[0])
+    except:
+        raise CommandError("Unable to parse range")
 
-def cmd_play(items):
-    vlc.player.clear_playlist()
-    vlc.player.load_tracks(items)
-
-
-def cli_search(items):
-    fmt = lambda x: u'{:<12} {}'.format(x['id'], x)
-    sys.stdout.write('\n'.join(map(fmt, list(items)[:25])) + '\n')
-
-
-def cli_play(items):
-    # Entering player context starts VLC server
-    with vlc.player:
-        vlc.player.load_tracks(items)
-
-        # Takes over control
-        vlc.player.run()
-    sys.stdout.write('\n\n')
+    tracks = []
+    try:
+        for r in ranges:
+            if isinstance(r, tuple):
+                for i in range(*r):
+                    tracks.append(vlc.player.get_track(i))
+            else:
+                tracks.append(vlc.player.get_track(r))
+        for track in tracks:
+            vlc.player.remove_track(track)
+    except:
+        raise CommandError("Unable to perform command.")
+    return "Deleted %s tracks" % len(tracks), None

@@ -13,7 +13,6 @@ from silverlining import (
 
 
 def soundcloud_get(*args, **kwargs):
-    kwargs['limit'] = 100
     results = client.get(*args, **kwargs)
     if isinstance(results, soundcloud.resource.Resource):
         return [results.obj]
@@ -27,16 +26,16 @@ class UserNotFoundError(Exception):
 
 
 class TrackNotFoundError(Exception):
-    def __init__(self, title, user=None):
-        msg = u'No tracks found named %s' % title
+    def __init__(self, query, user=None):
+        msg = u'No tracks found named %s' % query
         if user:
             msg += ' for %s' % user['username']
         super(TrackNotFoundError, self).__init__(msg)
 
 
 class PlaylistNotFoundError(Exception):
-    def __init__(self, title, user=None):
-        msg = u'No playlists found named %s' % title
+    def __init__(self, query, user=None):
+        msg = u'No playlists found named %s' % query
         if user:
             msg += ' for %s' % user['username']
         super(PlaylistNotFoundError, self).__init__(msg)
@@ -58,11 +57,12 @@ class User(dict):
         except IndexError:
             raise UserNotFoundError(username)
 
-    def __init__(self, d):
-        super(User, self).__init__(d)
-
     def __repr__(self):
         return self['username']
+
+    @property
+    def cli_display(self):
+        return '{:<12} {:24} {}'.format(self['id'], self['username'], self['full_name'])
 
     @property
     def tracks(self):
@@ -74,37 +74,44 @@ class User(dict):
 
 
 class Track(dict):
-    @classmethod
-    def get(cls, title=None, user=None):
-        if not (title or user):
-            raise TypeError("Need title and/or user")
+    def __init__(self, d):
+        super(Track, self).__init__(d)
+        self['username'] = self['user']['username']
 
-        if title and utils.isint(title):
-            tracks = soundcloud_get('/tracks/%s' % title)
-            title = tracks[0]['title']
+    @classmethod
+    def get(cls, query=None, user=None):
+        if query and utils.isint(query):
+            return [cls(soundcloud_get('/tracks/%s' % query)[0])]
 
         if user:
             tracks = user.tracks
-            if title:
-                tracks = utils.search_collection(tracks, title)
+            if query:
+                tracks = utils.search_collection(tracks, query)
         else:
-            tracks = soundcloud_get('/tracks', q=title)
+            tracks = soundcloud_get('/tracks', q=query)
         return list(map(cls, tracks))
 
     @classmethod
-    def get_one(cls, title=None, user=None):
+    def get_one(cls, query=None, user=None):
         try:
-            return cls.get(title, user)[0]
+            return cls.get(query, user)[0]
         except IndexError:
-            raise TrackNotFoundError(title, user)
+            raise TrackNotFoundError(query, user)
 
-    def __init__(self, d):
-        position = None
-        plid = None
-        super(Track, self).__init__(d)
+    @classmethod
+    def get_from_stream(cls, query=None):
+        resp = soundcloud_get('/me/activities/tracks/affiliated')
+        tracks = [cls(i['origin']) for i in resp[0]['collection']]
+        if query:
+            tracks = utils.search_collection(tracks, query)
+        return tracks
 
     def __repr__(self):
-        return self['title']
+        return self['username'] + ' - ' + self['title']
+
+    @property
+    def cli_display(self):
+        return '{:<12} {}'.format(self['id'], self)
 
     @property
     def stream_uri(self):
@@ -113,33 +120,34 @@ class Track(dict):
 
 class Playlist(dict):
     @classmethod
-    def get(cls, title=None, user=None):
-        if not (title or user):
-            raise TypeError("Need title and/or user")
-
-        if title and utils.isint(title):
-            return [cls(soundcloud_get('/playlists/%s' % title)[0])]
+    def get(cls, query=None, user=None):
+        if query and utils.isint(query):
+            return [cls(soundcloud_get('/playlists/%s' % query)[0])]
 
         if user:
             playlists = user.playlists
-            if title:
-                playlists = utils.search_collection(playlists, title)
+            if query:
+                playlists = utils.search_collection(playlists, query)
         else:
-            playlists = soundcloud_get('/playlists', q=title)
+            playlists = soundcloud_get('/playlists', q=query)
         return list(map(cls, playlists))
 
     @classmethod
-    def get_one(cls, title=None, user=None):
+    def get_one(cls, query=None, user=None):
         try:
-            return cls.get(title, user)[0]
+            return cls.get(query, user)[0]
         except IndexError:
-            raise PlaylistNotFoundError(title, user)
+            raise PlaylistNotFoundError(query, user)
 
     def __init__(self, d):
         super(Playlist, self).__init__(d)
 
     def __repr__(self):
-        return self['title']
+        return self['user']['username'] + ' - ' + self['title']
+
+    @property
+    def cli_display(self):
+        return '{:<12} {}'.format(self['id'], self)
 
     @property
     def tracks(self):

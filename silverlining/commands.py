@@ -37,19 +37,28 @@ def parse_cmd(cmd_in):
     return COMMANDS[cmd], args
 
 
-def parse_range(range):
+def parse_range(range, allow_dot=True):
     ranges = range.split(',')
     idxes = []
     for r in ranges:
         if '-' in r:
             s, e = r.split('-')
             if s == '.':
-                s = vlc.player.current_track.idx
+                if allow_dot:
+                    s = vlc.player.current_track.idx
+                else:
+                    raise CommandError("self reference not supported for this command")
             if e == '.':
-                e = vlc.player.current_track.idx
+                if allow_dot:
+                    e = vlc.player.current_track.idx
+                else:
+                    raise CommandError("self reference not supported for this command")
             idxes.extend(range(int(s), int(e) + 1))
         elif r == '.':
-            idxes.append(vlc.player.current_track.idx)
+            if allow_dot:
+                idxes.append(vlc.player.current_track.idx)
+            else:
+                raise CommandError("self reference not supported for this command")
         else:
             idxes.append(int(r))
 
@@ -98,7 +107,7 @@ def enqueue(args):
         raise CommandError("Enqueue takes one argument")
 
     try:
-        idxes = parse_range(args[0])
+        idxes = parse_range(args[0], allow_dot=False)
     except:
         raise CommandError("Unable to parse range")
 

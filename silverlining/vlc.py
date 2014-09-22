@@ -188,7 +188,7 @@ class Player(object):
         except:
             return None
 
-    # @hotkey('l')
+    @hotkey('l')
     def list_playlist(self):
         fmt = lambda x: "{:<12} {}".format(getattr(x, 'idx', 0), x)
         output = u'\r'

@@ -37,10 +37,10 @@ def parse_cmd(cmd_in):
     return COMMANDS[cmd], args
 
 
-def parse_range(range, allow_dot=True):
-    ranges = range.split(',')
+def parse_range(r, allow_dot=True):
+    rs = r.split(',')
     idxes = []
-    for r in ranges:
+    for r in rs:
         if '-' in r:
             s, e = r.split('-')
             if s == '.':
@@ -106,16 +106,12 @@ def enqueue(args):
     if len(args) == 0:
         raise CommandError("Enqueue takes one argument")
 
-    try:
-        idxes = parse_range(args[0], allow_dot=False)
-    except:
-        raise CommandError("Unable to parse range")
-
+    idxes = parse_range(args[0], allow_dot=False)
     tracks = []
     for i in idxes:
         if i > len(vlc.player._cmd_cache):
             raise CommandError("Range index out of range.")
-        item = vlc.player._cmd_cache[idx]
+        item = vlc.player._cmd_cache[i]
         if item['kind'] == 'track':
             tracks.append(item)
         else:
@@ -130,21 +126,14 @@ def delete(args):
     if len(args) == 0:
         raise CommandError("Delete takes one argument")
 
-    try:
-        ranges = parse_range(args[0])
-    except:
-        raise CommandError("Unable to parse range")
-
+    idxes = parse_range(args[0])
     tracks = []
-    try:
-        for r in ranges:
-            if isinstance(r, tuple):
-                for i in range(*r):
-                    tracks.append(vlc.player.get_track(i))
-            else:
-                tracks.append(vlc.player.get_track(r))
-        for track in tracks:
-            vlc.player.remove_track(track)
-    except:
-        raise CommandError("Unable to perform command.")
+    for i in idxes:
+        if i > len(vlc.player.playlist):
+            raise CommandError("Range index out of range.")
+        tracks.append(vlc.player.playlist[i])
+
+    for track in tracks:
+        vlc.player.remove_track(track)
+
     return "Deleted %s tracks" % len(tracks), None

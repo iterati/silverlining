@@ -55,7 +55,33 @@ There are more commands that are available in command mode. See below for full l
 
 ## Command mode
 
-While silverlining is playing, you can press `:` to enter command mode. While in
-command mode you can enter full commands to be executed when you press return. For now,
-the most useful feature is jump. :jump # or :j # to go to that index (shown next to tracks
-when you hit `l`).
+Command mode is an interactive way to list, delete, move around, search, or add
+to your playlist. The 6 commands in command mode are:
+
+* `q` - quits command mode
+* `l` - lists your queue  as `idx    track` with idx being the track's index in
+    the queue
+* `j` - jumps to a track in your playlist. If argument is a string, jump goes to
+    closest fuzzy string match
+* `d` - deletes items from your queue
+* `s` - searches SoundCloud with the same grammar as from the command line. Tracks
+    are listed `idx    track` instead of `sc_id   track`
+* `e` - enqueues tracks from search
+
+### Range syntax
+
+Both the delete and enqueue commands accept ranges. Examples:
+
+* `0` - refers to idx 0
+* `0,3` - refers to idxes 0 and 3
+* `0-3` - refers to idxes 0, 1, 2, and 3
+* `0,3-5` - refers to idxes 0, 3, 4, and 5
+
+The delete command also accepts `.` as a reference to the current track's idx:
+
+* `.` - refers to the current track's idx
+* `.-3` - refers to current track's idx (assume it's 1), 2, and 3
+
+When using enqueue, idxes refer to the most recently performed search results.
+Results are cached and can be referred to multiple times without needing to search
+again.

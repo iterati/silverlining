@@ -100,6 +100,8 @@ class Player(object):
 
     def load_tracks(self, tracks):
         for track in list(tracks):
+            if track['id'] in self._tracks:
+                continue
             self.get('status.json', command='in_enqueue', input=track.stream_uri,
                      name=track['id'])
             self._tracks[int(track['id'])] = track

@@ -76,7 +76,8 @@ class User(dict):
 class Track(dict):
     def __init__(self, d):
         super(Track, self).__init__(d)
-        self['username'] = self['user']['username']
+        if not 'username' in self:
+            self['username'] = self['user']['username']
 
     @classmethod
     def get(cls, query=None, user=None):

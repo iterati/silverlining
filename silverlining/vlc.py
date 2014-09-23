@@ -1,10 +1,16 @@
 import functools
-import requests
+import simplejson
 import subprocess
 import sys
 import time
 
-from silverlining import utils
+import requests
+
+from silverlining import (
+    HIST_FILE,
+    utils,
+)
+from silverlining.command import CommandMode
 
 
 HOTKEYS = {}
@@ -23,12 +29,13 @@ class Player(object):
     _session = requests.session()
     _session.auth = requests.auth.HTTPBasicAuth('', 'silverlining')
     _tracks = {}
-    _current_id = None
+    current_track = None
     _time = 0
     _length = 0
     _running = False
     _cmd_mode = False
     _proc = None
+    _history = []
 
     def __enter__(self):
         """Starts the VLC server and waits for it to start up before returning"""
@@ -47,9 +54,29 @@ class Player(object):
             except requests.exceptions.ConnectionError:
                 pass
 
+        try:
+            with open(HIST_FILE, 'rb') as f:
+                self._history = simplejson.loads(f.read())
+                self._history.reverse()
+        except IOError:
+            pass
+
     def __exit__(self, *args):
         """Terminates the VLC process on exit"""
         self._proc.terminate()
+        self._history.reverse()
+        with open(HIST_FILE, 'w') as f:
+            data = simplejson.dumps(self._history[:50], indent=2)
+            f.write(data + '\n')
+
+    def _write_track_to_history(self, track):
+        self._history.append({
+            'id': track['id'],
+            'title': track['title'],
+            'permalink_url': track['permalink_url'],
+            'stream_url': track['stream_url'],
+            'username': track['username'],
+        })
 
     def run(self):
         """Runs the poor man's thread"""
@@ -75,22 +102,25 @@ class Player(object):
                      name=track['id'])
             self._tracks[int(track['id'])] = track
 
-        self._sync_playlist()
+        self._sync_queue()
 
     def remove_track(self, track):
         self.get('status.json', command='pl_delete', id=track.plid)
-        track = self._tracks[track['id']]
+        try:
+            track = self._tracks[track['id']]
+        except KeyError:
+            return
         if track == self.current_track:
             self.next()
             self._tracks.pop(track['id'])
             self.play()
         else:
             self._tracks.pop(track['id'])
-        for idx in range(track.idx, len(self.playlist)):
-            self.playlist[idx].idx -= 1
+        for idx in range(track.idx, len(self.queue)):
+            self.queue[idx].idx -= 1
 
-    def _sync_playlist(self):
-        """Syncs playlists with VLC"""
+    def _sync_queue(self):
+        """Syncs queue with VLC"""
         resp = self.get('playlist.json').json()
         playlist = resp['children'][0]
         for i, d in enumerate(playlist['children']):
@@ -98,18 +128,41 @@ class Player(object):
             track.idx = i
             track.plid = int(d['id'])
 
+    def _update_track(self, vlc_id):
+        if vlc_id is None and self.current_track is not None:
+            #track became none
+            current_track = self.current_track
+            self.current_track = None
+            #delete current_track
+            self._write_track_to_history(current_track)
+            self.remove_track(current_track)
+
+        if vlc_id is not None and self.current_track and vlc_id != self.current_track['id']:
+            #track changed
+            current_track = self.current_track
+            self.current_track = self._tracks[vlc_id]
+            #delete current track
+            self._write_track_to_history(current_track)
+            self.remove_track(current_track)
+
+        if self.current_track is None and vlc_id is not None:
+            self.current_track = self._tracks[vlc_id]
+
     def _update_status(self):
         """updates current status"""
         resp = self.get('status.json').json()
         try:
-            self._current_id = int(resp['information']['category']['meta']['title'])
+            vlc_id = int(resp['information']['category']['meta']['title'])
         except KeyError:
-            self._current_id = None
-        self._time = resp['time']
+            vlc_id = None
+        self._update_track(vlc_id)
+        if self.current_track is None and self.num_tracks > 0:
+            self.play()
         self._length = resp['length']
+        self._time = resp['time']
 
     @property
-    def playlist(self):
+    def queue(self):
         return sorted(self._tracks.values(), key=lambda x: getattr(x, 'idx'))
 
     @property
@@ -117,19 +170,12 @@ class Player(object):
         return len(self._tracks)
 
     @property
-    def current_track(self):
-        if self._current_id and self._current_id in self._tracks:
-            return self._tracks[self._current_id]
-        else:
-            return None
-
-    @property
     def now_playing(self):
         if self.current_track:
-            idx = getattr(self.current_track, 'idx', 0)
-            return u"%s [%s/%s] %s" % (
+            return u"[%s] %s %s" % (
+                self.num_tracks,
                 utils.timestamp(self._time, self._length),
-                idx + 1, self.num_tracks, self.current_track,
+                self.current_track,
             )
         else:
             return "Stopped"
@@ -137,9 +183,9 @@ class Player(object):
     def get_track(self, target):
         try:
             if utils.isint(target):
-                return player.playlist[int(target)]
+                return self.queue[int(target)]
             else:
-                return utils.search_collection(player.playlist, target)[0]
+                return utils.search_collection(self.queue, target)[0]
         except IndexError:
             return None
 
@@ -164,23 +210,21 @@ class Player(object):
         self.get('status.json', command='pl_next')
         return "Next..."
 
-    @hotkey('p')
-    def previous(self):
-        self.get('status.json', command='pl_previous')
-        return "Previous..."
-
     @hotkey('s')
     def shuffle(self):
         self.get('status.json', command='pl_sort', id=0, val="random")
-        self._sync_playlist()
+        self._sync_queue()
         return "Shuffling..."
 
-    def _list_playlist(self):
+    def _list_queue(self):
         fmt = lambda x: "{:<12} {}".format(getattr(x, 'idx', 0), x)
-        return u'\n'.join(map(fmt, self.playlist))
+        return u'\n'.join(map(fmt, self.queue))
 
     def jump(self, track):
         self.get('status.json', command='pl_play', id=track.plid)
+        tracks = self.queue[:track.idx]
+        for track in tracks:
+            self.remove_track(track)
 
     def _get_result(self, index):
         try:
@@ -189,10 +233,10 @@ class Player(object):
             return None
 
     @hotkey('l')
-    def list_playlist(self):
+    def list_queue(self):
         fmt = lambda x: "{:<12} {}".format(getattr(x, 'idx', 0), x)
         output = u'\r'
-        output += self._list_playlist()
+        output += self._list_queue()
         output += u'\n'
         return output
 
@@ -222,35 +266,12 @@ class Player(object):
         self._running = False
         return "Quitting..."
 
-    def clear_playlist(self):
+    def clear_queue(self):
         self.stop()
         self.get('status.json', command='pl_empty')
         self._update_status()
-        return "Cleared playlist"
+        return "Cleared queue"
 
     @hotkey(':')
     def enter_command_mode(self):
-        from silverlining.commands import parse_cmd, CommandError
-        self._cmd_mode = True
-        self._cmd_cache = []
-        while self._cmd_mode:
-            cmd = input('\n:')
-            output = None
-            try:
-                cmd, args = parse_cmd(cmd)
-            except CommandError as e:
-                output = e.message
-            else:
-                try:
-                    output, cache = cmd(args)
-                except CommandError as e:
-                    output = e.message
-                else:
-                    if cache:
-                        self._cmd_cache = cache
-            if output:
-                sys.stdout.write(u'\r{:120}'.format(output))
-        return ""
-
-
-player = Player()
+        CommandMode(self).cmdloop()

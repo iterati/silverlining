@@ -4,13 +4,15 @@ __author__ = 'John Miller'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2014 ' + __author__
 
+import atexit
 import os
 import simplejson
 import sys
 
 # Get settings
 DOT_FILES = os.path.expanduser('~/.silverlining')
-CONFIG_FILE = os.path.join(DOT_FILES, 'config.json')
+CONFIG_FILE = os.path.expanduser('~/.silverlining/config.json')
+HIST_FILE = os.path.expanduser('~/.silverlining/history.json')
 
 try:
     with open(CONFIG_FILE, 'rb') as f:
@@ -60,10 +62,19 @@ except Exception as e:
     sys.exit(1)
 
 
-from silverlining import utils
-from silverlining import models
-from silverlining import vlc
-# from silverlining import commands
+from silverlining.base import (
+    parse_search_arguments,
+    get_search_results,
+    get_search_interp,
+)
+from silverlining.models import (
+    Playlist,
+    Track,
+    User,
+)
+from silverlining.vlc import (
+    Player,
+)
 
 
 @click.command()
@@ -71,113 +82,37 @@ from silverlining import vlc
 @click.argument('args', nargs=-1, required=False)
 def cli(cmd=None, args=None):
     """Main entry point of the script"""
-    if cmd in ['h', 'help']:
-        cli_help(args)
-    elif cmd in ['s', 'search'] or not cmd:
-        cli_search(args)
+    try:
+        username, category, query = parse_search_arguments(args)
+    except Exception as e:
+        sys.stdout.write("%s\n" % e)
+        return
+
+    if cmd in ['s', 'search'] or not cmd:
+        cli_search(username, category, query)
     elif cmd in ['p', 'play']:
-        cli_play(args)
+        cli_play(username, category, query)
     else:
         sys.stdout.write("Unrecognized command %s\n" % cmd)
 
-
-def cli_help(args):
-    if not args:
-        sys.stdout.write("help\n")
-    elif args[0] in ['s', 'search']:
-        sys.stdout.write("help search\n")
-    elif args[0] in ['p', 'play']:
-        sys.stdout.write("help play\n")
-    else:
-        sys.stdout.write("no help for %s\n" % args[0])
+    sys.stdout.write("\n\n")
 
 
-def parse_cli_arguments(args):
-    if not args:
-        return None, 'stream', None
-    if args[0] in ['me', 'stream']:
-        if len(args) > 1:
-            return None, 'stream', args[1]
-        return None, 'stream', None
-    elif args[0] in ['t', 'track', 'tracks']:
-        if len(args) > 1:
-            return None, 'track', args[1]
-        raise Exception("not enough arguments")
-    elif args[0] in ['p', 'playlist', 'playlists']:
-        if len(args) > 1:
-            return None, 'playlist', args[1]
-        raise Exception("not enough arguments")
-    else:
-        if len(args) == 1:
-            return args[0], 'user', None
-        elif args[1] in ['t', 'track', 'tracks']:
-            if len(args) > 2:
-                return args[0], 'track', args[2]
-            return args[0], 'track', None
-        elif args[1] in ['p', 'playlist', 'playlists']:
-            if len(args) > 2:
-                return args[0], 'playlist', args[2]
-            return args[0], 'playlist', None
-    raise Exception("unable to parse command %s" % ' '.join(args))
+def cli_search(username, category, query):
+    sys.stdout.write("Searching " + get_search_interp(username, category, query) + "\n")
+    items = get_search_results(username, category, query)
+    sys.stdout.write(u"\n".join([i.cli_display for i in items]))
 
 
-def get_items(username, category, query):
-    if category == 'stream':
-        items = models.Track.get_from_stream(query)
-    elif category == 'user':
-        items = models.User.get(username)
-    else:
-        user = models.User.get_one(username) if username else None
-        if category == 'track':
-            items = models.Track.get(query, user)
-        elif category == 'playlist':
-            items = models.Playlist.get(query, user)
-
-    return items
-
-
-def get_interp(username, category, query):
-    interp = ""
-    if category == 'stream':
-        interp += "your stream"
-    elif username:
-        interp += "%s's %ss" % (username, category)
-    else:
-        interp += "%ss" % category
-    if query:
-        interp += " for %s" % query
-    return interp
-
-
-def cli_search(args):
-    try:
-        username, category, query = parse_cli_arguments(args)
-    except Exception as e:
-        sys.stdout.write("%s\n" % e)
-        return
-
-    sys.stdout.write("Searching " + get_interp(username, category, query) + "\n")
-    items = get_items(username, category, query)
-    sys.stdout.write(u"\n".join([i.cli_display for i in items]) + "\n\n")
-
-
-def cli_play(args):
-    try:
-        username, category, query = parse_cli_arguments(args)
-    except Exception as e:
-        sys.stdout.write("%s\n" % e)
-        return
-
-    sys.stdout.write("Playing " + get_interp(username, category, query) + "\n")
-    items = get_items(username, category, query)
+def cli_play(username, category, query):
+    sys.stdout.write("Playing " + get_search_interp(username, category, query) + "\n")
+    items = get_search_results(username, category, query)
     if items:
         if items[0]['kind'] == 'track':
             tracks = items
         else:
             tracks = items[0].tracks
 
-    with vlc.player:
-        vlc.player.load_tracks(tracks)
-        vlc.player.run()
-
-    sys.stdout.write("\n\n")
+    with Player() as player:
+        player.load_tracks(tracks)
+        player.run()

@@ -226,12 +226,6 @@ class Player(object):
         for track in tracks:
             self.remove_track(track)
 
-    def _get_result(self, index):
-        try:
-            return self._cmd_cache[int(index)]
-        except:
-            return None
-
     @hotkey('l')
     def list_queue(self):
         fmt = lambda x: "{:<12} {}".format(getattr(x, 'idx', 0), x)
@@ -254,18 +248,12 @@ class Player(object):
         else:
             return 'Not playing'
 
-    @hotkey('d')
-    def remove_current_track(self):
-        track = self.current_track
-        self.remove_track(track)
-        self.play()
-        return "Removed %s" % track
-
     @hotkey('q')
     def quit(self):
         self._running = False
         return "Quitting..."
 
+    @hotkey('X')
     def clear_queue(self):
         self.stop()
         self.get('status.json', command='pl_empty')

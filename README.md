@@ -42,16 +42,16 @@ There are more commands that are available in command mode. See below for full l
 ## Playback controls
 
 * `n` - next track
-* `p` - previous track
 * `.` - seek forward 15s
 * `,` - seek backwards 15s
 * `space` - pause/resume playback
 * `l` - list local playlist tracks
-* `s` - shuffle playlist
+* `s` - shuffle queue
 * `u` - display url
 * `i` - display id
 * `:` - enter command mode
 * `q` - quit
+* `X` - clears your queue
 
 ## Command mode
 
@@ -67,6 +67,7 @@ to your playlist. The 6 commands in command mode are:
 * `s` - searches SoundCloud with the same grammar as from the command line. Tracks
     are listed `idx    track` instead of `sc_id   track`
 * `e` - enqueues tracks from search
+* `h` - h by itself lists your history, h + # will load the track at idx
 
 ### Range syntax
 

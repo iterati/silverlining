@@ -25,10 +25,6 @@ class CommandMode(cmd.Cmd):
         self._search_cache = []
         self.args = []
 
-    def postcmd(self, stop, line):
-        sys.stdout.write(u'{:120}\n'.format(self.player.now_playing))
-        return stop
-
     def do_EOF(self, line):
         return True
 

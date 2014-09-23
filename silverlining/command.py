@@ -92,7 +92,7 @@ class CommandMode(cmd.Cmd):
     def do_list(self, line):
         fmt = lambda x: "{:<12} {}".format(x.idx, x)
         sys.stdout.write("Queue:\n")
-        sys.stdout.write('\n'.join(map(fmt, self.player.queue)))
+        sys.stdout.write(u'\n'.join(map(fmt, self.player.queue)))
         sys.stdout.write('\n')
 
     def do_jump(self, line):
@@ -140,7 +140,7 @@ class CommandMode(cmd.Cmd):
         else:
             sys.stdout.write("Searching " + get_search_interp(username, category, query) + "\n")
             items = get_search_results(username, category, query)
-            fmt = lambda x: "{:<12} {}".format(*x)
+            fmt = lambda x: u"{:<12} {}".format(*x)
             sys.stdout.write(u"\n".join(map(fmt, enumerate(items))) + "\n")
             self._search_cache = items
         return
@@ -178,7 +178,7 @@ class CommandMode(cmd.Cmd):
             sys.stdout.write('History:\n')
             for i, hist in enumerate(history):
                 track = Track(hist)
-                sys.stdout.write('{:<12} {}\n'.format(i, track))
+                sys.stdout.write(u'{:<12} {}\n'.format(i, track))
         else:
             try:
                 indexes = self.parse_range(self.args[0])

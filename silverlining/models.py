@@ -29,7 +29,7 @@ class TrackNotFoundError(Exception):
     def __init__(self, query, user=None):
         msg = u'No tracks found named %s' % query
         if user:
-            msg += ' for %s' % user['username']
+            msg += u' for %s' % user['username']
         super(TrackNotFoundError, self).__init__(msg)
 
 
@@ -37,7 +37,7 @@ class PlaylistNotFoundError(Exception):
     def __init__(self, query, user=None):
         msg = u'No playlists found named %s' % query
         if user:
-            msg += ' for %s' % user['username']
+            msg += u' for %s' % user['username']
         super(PlaylistNotFoundError, self).__init__(msg)
 
 
@@ -58,11 +58,11 @@ class User(dict):
             raise UserNotFoundError(username)
 
     def __repr__(self):
-        return self['username']
+        return u"%s" % self['username']
 
     @property
     def cli_display(self):
-        return '{:<12} {:24} {}'.format(self['id'], self['username'], self['full_name'])
+        return u'{:<12} {:24} {}'.format(self['id'], self['username'], self['full_name'])
 
     @property
     def tracks(self):
@@ -108,11 +108,11 @@ class Track(dict):
         return tracks
 
     def __repr__(self):
-        return self['username'] + ' - ' + self['title']
+        return u"%s - %s" % (self['username'], self['title'])
 
     @property
     def cli_display(self):
-        return '{:<12} {}'.format(self['id'], self)
+        return u"{:<12} {}".format(self['id'], self)
 
     @property
     def stream_uri(self):
@@ -144,11 +144,11 @@ class Playlist(dict):
         super(Playlist, self).__init__(d)
 
     def __repr__(self):
-        return self['user']['username'] + ' - ' + self['title']
+        return u"%s - %s" % (self['user']['username'], self['title'])
 
     @property
     def cli_display(self):
-        return '{:<12} {}'.format(self['id'], self)
+        return u"{:<12} {}".format(self['id'], self)
 
     @property
     def tracks(self):

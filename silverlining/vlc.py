@@ -37,6 +37,15 @@ class Player(object):
     _proc = None
     _history = []
 
+    def __init__(self):
+        self.command_mode = CommandMode(self)
+        try:
+            with open(HIST_FILE, 'rb') as f:
+                self._history = simplejson.loads(f.read())
+                self._history.reverse()
+        except IOError:
+            pass
+
     def __enter__(self):
         """Starts the VLC server and waits for it to start up before returning"""
         if self._proc:
@@ -53,15 +62,6 @@ class Player(object):
                 return self
             except requests.exceptions.ConnectionError:
                 pass
-
-        try:
-            with open(HIST_FILE, 'rb') as f:
-                self._history = simplejson.loads(f.read())
-                self._history.reverse()
-        except IOError:
-            pass
-
-        self.command_mode = CommandMode(self)
 
     def __exit__(self, *args):
         """Terminates the VLC process on exit"""

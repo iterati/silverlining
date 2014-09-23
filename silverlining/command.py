@@ -51,6 +51,8 @@ class CommandMode(cmd.Cmd):
             cmd = 'enqueue'
         elif cmd == 'h':
             cmd = 'history'
+        elif cmd == 's':
+            cmd = 'search'
 
         return (cmd, args, line)
 
@@ -143,7 +145,7 @@ class CommandMode(cmd.Cmd):
             sys.stdout.write("Searching " + get_search_interp(username, category, query) + "\n")
             items = get_search_results(username, category, query)
             fmt = lambda x: "{:<12} {}".format(*x)
-            sys.stdout.write(u"\n".join(map(fmt, items)) + "\n")
+            sys.stdout.write(u"\n".join(map(fmt, enumerate(items))) + "\n")
             self._search_cache = items
         return
 

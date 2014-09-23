@@ -61,6 +61,8 @@ class Player(object):
         except IOError:
             pass
 
+        self.command_mode = CommandMode(self)
+
     def __exit__(self, *args):
         """Terminates the VLC process on exit"""
         self._proc.terminate()
@@ -262,4 +264,4 @@ class Player(object):
 
     @hotkey(':')
     def enter_command_mode(self):
-        CommandMode(self).cmdloop()
+        self.command_mode.cmdloop()

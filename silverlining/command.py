@@ -184,6 +184,19 @@ class CommandMode(cmd.Cmd):
                 track = Track(hist)
                 sys.stdout.write('{:<12} {}\n'.format(i, track))
         else:
-            track = Track.get_one(history[int(self.args[0])]['id'])
-            self.player.load_tracks([track])
-            sys.stdout.write('loaded %s\n' % track)
+            try:
+                indexes = self.parse_range(self.args[0])
+            except CommandError:
+                sys.stdout.write("invalid range\n")
+                return
+
+            tracks = []
+            for i in indexes:
+                try:
+                    tracks.append(Track.get_one(history[i]['id']))
+                except IndexError:
+                    sys.stdout.write("invalid range\n")
+                    return
+
+            self.player.load_tracks(tracks)
+            sys.stdout.write('loaded %s tracks\n' % len(tracks))

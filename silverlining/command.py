@@ -95,6 +95,7 @@ class CommandMode(cmd.Cmd):
         fmt = lambda x: "{:<12} {}".format(x.idx, x)
         sys.stdout.write("Queue:\n")
         sys.stdout.write('\n'.join(map(fmt, self.player.queue)))
+        sys.stdout.write('\n')
 
     def do_jump(self, line):
         if not self.args[0]:
@@ -174,13 +175,13 @@ class CommandMode(cmd.Cmd):
         return
 
     def do_history(self, line):
+        history = self.player._history[:-50:-1]
         if len(self.args) == 0:
             sys.stdout.write('History:\n')
-            for hist in self.player._history[::-1]:
+            for i, hist in enumerate(history):
                 track = Track(hist)
-                sys.stdout.write('{:<12} {}\n'.format(track))
+                sys.stdout.write('{:<12} {}\n'.format(i, track))
         else:
-            track = Track.get_one(self.player._history[-int(self.args[0])]['id'])
+            track = Track.get_one(history[int(self.args[0])]['id'])
             self.player.load_tracks([track])
             sys.stdout.write('loaded %s\n' % track)
-        return

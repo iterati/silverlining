@@ -14,6 +14,7 @@ from silverlining.command import CommandMode
 
 
 HOTKEYS = {}
+MAX_HIST = 50
 
 
 def hotkey(keys, **kwargs):
@@ -43,7 +44,7 @@ class Player(object):
             with open(HIST_FILE, 'rb') as f:
                 self._history = simplejson.loads(f.read())
                 self._history.reverse()
-        except IOError:
+        except (IOError, simplejson.scanner.JSONDecodeError):
             pass
 
     def __enter__(self):
@@ -66,10 +67,14 @@ class Player(object):
     def __exit__(self, *args):
         """Terminates the VLC process on exit"""
         self._proc.terminate()
-        self._history.reverse()
+        history = list(utils.OrderedSet(
+            [simplejson.dumps(item, indent=2) for item in reversed(self._history)]
+        ))[:MAX_HIST]
+
         with open(HIST_FILE, 'w') as f:
-            data = simplejson.dumps(self._history[:50], indent=2)
-            f.write(data + '\n')
+            f.write("[\n")
+            [f.write(item + ',\n') for item in history[:len(history) - 1]]
+            f.write(history[len(history) - 1] + '\n]\n')
 
     def _write_track_to_history(self, track):
         self._history.append({

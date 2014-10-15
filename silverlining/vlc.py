@@ -8,9 +8,11 @@ import requests
 
 from silverlining import (
     HIST_FILE,
+    client,
     utils,
 )
 from silverlining.command import CommandMode
+from silverlining.models import get_silverlining_playlist
 
 
 HOTKEYS = {}
@@ -46,6 +48,7 @@ class Player(object):
                 self._history.reverse()
         except (IOError, simplejson.scanner.JSONDecodeError):
             pass
+        self.playlist = get_silverlining_playlist()
 
     def __enter__(self):
         """Starts the VLC server and waits for it to start up before returning"""
@@ -272,3 +275,12 @@ class Player(object):
     @hotkey(':')
     def enter_command_mode(self):
         self.command_mode.cmdloop()
+
+    @hotkey('p')
+    def add_to_playlist(self):
+        tracks = []
+        if self.playlist.tracks:
+            tracks.extend([{'id': track['id']} for track in self.playlist.tracks])
+        tracks.append({'id': self.current_track['id']})
+        client.put(self.playlist['uri'], playlist={'tracks': tracks})
+        return "%s added to playlist" % self.current_track

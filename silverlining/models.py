@@ -184,3 +184,16 @@ class Playlist(dict):
     @property
     def tracks(self):
         return list(map(Track, self['tracks']))
+
+
+def get_silverlining_playlist():
+    for playlist in client.get('me/playlists'):
+        if playlist.title == 'Silverlining Playlist':
+            playlist = Playlist(playlist.obj)
+            break
+    else:
+        resp = client.post('/playlists', playlist={
+            'title': 'Silverlining Playlist', 'sharing': 'private'})
+        playlist = Playlist(resp.obj)
+
+    return playlist

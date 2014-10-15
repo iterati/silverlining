@@ -2,11 +2,12 @@ from silverlining import (
     models,
     utils,
 )
+from silverlining.models import get_silverlining_playlist
 
 
 def parse_search_arguments(args):
     if not args or args[0] == '':
-        return 'me', 'stream', None
+        return None, 'sllist', None
     if args[0] in ['me', 'stream']:
         if len(args) > 1:
             return None, 'stream', args[1]
@@ -38,7 +39,11 @@ def parse_search_arguments(args):
 
 
 def get_search_results(username, category, query):
-    if category == 'stream':
+    if category == 'sllist':
+        items = get_silverlining_playlist().tracks
+        if query:
+            items = utils.search_collection(items, query)
+    elif category == 'stream':
         if username == 'me':
             items = models.Track.get_from_stream(query)
         else:
@@ -60,7 +65,9 @@ def get_search_results(username, category, query):
 
 def get_search_interp(username, category, query):
     interp = ""
-    if category == 'stream':
+    if category == 'sllist':
+        interp += "silverlining playlist"
+    elif category == 'stream':
         if username == 'me':
             interp += "your stream"
         else:

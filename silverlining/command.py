@@ -33,7 +33,10 @@ class CommandMode(cmd.Cmd):
         if args[1] == '':
             cmd, self.args = args[0], []
         else:
-            cmd, self.args = args[0], args[1:]
+            cmd = args[0]
+            self.args = []
+            for a in args[1:]:
+                self.args.extend(a.split(' '))
 
         if cmd == 'q':
             cmd = 'quit'

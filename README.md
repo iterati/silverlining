@@ -10,6 +10,7 @@ Get application api keys from [SoundCloud](http://soundcloud.com/you/apps)
 Install [VLC >= 2.1.0](http://www.videolan.org/vlc/download-macosx.html) in /Applications
 
 Clone the repo:
+
 `git clone https://github.com/iterati/silverlining.git`
 
 Install the module:

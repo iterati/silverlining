@@ -1,28 +1,30 @@
 silverlining
 ============
 
-## SoundCloud CLI Interface
-
-Provides some access to the SoundCloud API and streaming playback from the
-command line. You'll need to get an api key from here; http://soundcloud.com/you/apps
-and add it to your environment variables.
+# A SoundCloud CLI Interface for Mac OS X
 
 ## Installation
+
+Get application api keys from [SoundCloud](http://soundcloud.com/you/apps)
 
 Install [VLC >= 2.1.0](http://www.videolan.org/vlc/download-macosx.html) in /Applications
 
 Clone the repo:
+
 `git clone https://github.com/iterati/silverlining.git`
 
 Install the module:
+
 `pip install --editable .`
 
 Run it once to generate dotfiles (`~/.silverlining`):
+
 `silverlining`
 
-Enter your SoundCloud credentials in `~/.silverlining/config.json`
+Enter your SoundCloud credentials and api keys in `~/.silverlining/config.json`
 
 Play music:
+
 `silverlining play feedme track patience`
 
 ## Usage grammar
@@ -32,12 +34,70 @@ be abbreviated to s and p respectively. They allow you to search users, tracks, 
 playlists. Tracks and playlists are categories that can be searched and can also be
 abbreviated to single letters. Up to the first 3 words after the command are parsed.
 
-* First word is category? Words are category, username, search string
-* Else? Words are username, category, search string
+* No first word? Show or play your silverlining playlist.
+* First word is category? Words are category and search string
+* Else? Words are username, category, and search string
 
 If the username or search string are integers, the resource is matched by id.
 
 There are more commands that are available in command mode. See below for full list.
+
+### Categories
+
+There are three categories that can be used:
+
+* Stream - Your activity stream or the tracks posted and reposted by another user
+* Tracks - Tracks posted by a user
+* Playlists - Playlists posted by a user
+
+### Examples
+
+`silverlining`
+Lists your silverlining playlist
+
+`silverlining stream`
+Lists your SoundCloud stream
+
+`silverlining s feedme`
+Search for users matching 'feedme'
+
+`silverlining s feedme stream`
+List tracks (posted and reposted) from first user matching 'feedme'
+
+`silverlining s 12345 t`
+List tracks for user with id 12345
+
+`silverlining s feedme p`
+List playlists from first user matching 'feedme'
+
+`silverlining s feedme t patience`
+Search for 'patience' in tracks from first user matching 'feedme'
+
+`silverlining s t patience`
+Search tracks for 'patience'
+
+`silverlining p`
+Plays your silverlining playlist
+
+`silverlining p stream`
+Plays your SoundCloud stream
+
+`silverlining p feedme`
+Plays tracks from first user matching 'feedme'
+
+`silverlining p feedme stream`
+Plays tracks (posted and reposted) from first user matching 'feedme'
+
+`silverlining p feedme p`
+Plays first playlist from first user matching 'feedme'
+
+## Playlist
+
+Silverlining creates a private playlist titled "Silverlining Playlist" on your
+SoundCloud account when first ran. You can list this playlist by running
+`silverlining s` without any other arguments and play it with `silverlining p`.
+
+The only current way to edit the playlist is through the SoundCloud web ui.
 
 ## Playback controls
 
@@ -45,10 +105,11 @@ There are more commands that are available in command mode. See below for full l
 * `.` - seek forward 15s
 * `,` - seek backwards 15s
 * `space` - pause/resume playback
-* `l` - list local playlist tracks
+* `l` - list queue
 * `s` - shuffle queue
 * `u` - display url
 * `i` - display id
+* `p` - adds current track to your silverlining playist
 * `:` - enter command mode
 * `q` - quit
 * `X` - clears your queue

@@ -5,7 +5,7 @@ silverlining
 
 ## Installation
 
-Get application api keys from [SoundCloud](http://soundcloud.com/you/apps)
+Get application client id and api key from [SoundCloud](http://soundcloud.com/you/apps)
 
 Install [VLC >= 2.1.0](http://www.videolan.org/vlc/download-macosx.html) in /Applications
 
@@ -21,7 +21,16 @@ Run it once to generate dotfiles (`~/.silverlining`):
 
 `silverlining`
 
-Enter your SoundCloud credentials and api keys in `~/.silverlining/config.json`
+Enter your SoundCloud credentials and api key in `~/.silverlining/config.json`
+
+```
+{
+  "username": your_soundcloud_username,
+  "password": your_soundcloud_password,
+  "client_id": your_soundcloud_app_client_id,
+  "secret_key": your_soundcloud_app_secret_key
+}
+```
 
 Play music:
 

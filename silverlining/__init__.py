@@ -95,7 +95,7 @@ def cli(cmd=None, args=None):
     else:
         sys.stdout.write("Unrecognized command %s\n" % cmd)
 
-    sys.stdout.write("\n\n")
+    sys.stdout.write("\n")
 
 
 def cli_search(username, category, query):

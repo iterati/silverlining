@@ -67,7 +67,8 @@ def get_search_interp(username, category, query):
             interp = "%s's stream" % username
     elif username:
         if category == 'user':
-            interp += "%s's tracks" % username
+            interp += username
+            # interp += "%s's tracks" % username
         else:
             interp += "%s's %ss" % (username, category)
     else:

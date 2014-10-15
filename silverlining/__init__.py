@@ -106,12 +106,20 @@ def cli_search(username, category, query):
 
 def cli_play(username, category, query):
     sys.stdout.write("Playing " + get_search_interp(username, category, query) + "\n")
-    items = get_search_results(username, category, query)
-    if items:
-        if items[0]['kind'] == 'track':
-            tracks = items
-        else:
-            tracks = items[0].tracks
+    try:
+        items = get_search_results(username, category, query)
+    except (models.UserNotFoundError, models.TrackNotFoundError, models.PlaylistNotFoundError) as e:
+        sys.stdout.write(e.args[0])
+        return
+
+    if not len(items):
+        sys.stdout.write("Nothing found. Exiting.")
+        return
+
+    if items[0]['kind'] == 'track':
+        tracks = items
+    else:
+        tracks = items[0].tracks
 
     with Player() as player:
         player.load_tracks(tracks)

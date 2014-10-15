@@ -3,6 +3,7 @@ import functools
 import os
 import sqlite3
 
+import requests
 import soundcloud
 
 from silverlining import (
@@ -13,7 +14,11 @@ from silverlining import (
 
 
 def soundcloud_get(*args, **kwargs):
-    results = client.get(*args, **kwargs)
+    try:
+        results = client.get(*args, **kwargs)
+    except requests.exceptions.HTTPError:
+        return []
+
     if isinstance(results, soundcloud.resource.Resource):
         return [results.obj]
     elif isinstance(results, soundcloud.resource.ResourceList):
@@ -22,22 +27,32 @@ def soundcloud_get(*args, **kwargs):
 
 class UserNotFoundError(Exception):
     def __init__(self, username):
-        super(UserNotFoundError, self).__init__(u'No user found for %s' % username)
+        if utils.isint(query):
+            msg = u"User with id %s not found" % username
+        else:
+            msg = u"No user found for %s" % username
+        super(UserNotFoundError, self).__init__(msg)
 
 
 class TrackNotFoundError(Exception):
     def __init__(self, query, user=None):
-        msg = u'No tracks found named %s' % query
-        if user:
-            msg += u' for %s' % user['username']
+        if utils.isint(query):
+            msg = u"Track with id %s not found" % query
+        else:
+            msg = u'No tracks found named %s' % query
+            if user:
+                msg += u' for %s' % user['username']
         super(TrackNotFoundError, self).__init__(msg)
 
 
 class PlaylistNotFoundError(Exception):
     def __init__(self, query, user=None):
-        msg = u'No playlists found named %s' % query
-        if user:
-            msg += u' for %s' % user['username']
+        if utils.isint(query):
+            msg = u"Playlist with id %s not found" % query
+        else:
+            msg = u'No playlists found named %s' % query
+            if user:
+                msg += u' for %s' % user['username']
         super(PlaylistNotFoundError, self).__init__(msg)
 
 
@@ -72,6 +87,14 @@ class User(dict):
     def playlists(self):
         return list(map(Playlist, soundcloud_get('/users/%s/playlists' % self['id'])))
 
+    @property
+    def stream(self):
+        url = "https://api-v2.soundcloud.com/profile/soundcloud:users:%s?limit=50&offset=%s"
+        items = []
+        for i in range(4):
+            items.extend(requests.get(url % (self['id'], i * 50)).json()['collection'])
+        return list(map(Track, map(lambda x: x['track'], filter(lambda x: x['type'] in ['track', 'track-repost'], items))))
+
 
 class Track(dict):
     def __init__(self, d):
@@ -82,7 +105,10 @@ class Track(dict):
     @classmethod
     def get(cls, query=None, user=None):
         if query and utils.isint(query):
-            return [cls(soundcloud_get('/tracks/%s' % query)[0])]
+            tracks = soundcloud_get('/tracks/%s' % query)
+            if not tracks:
+                raise TrackNotFoundError(query)
+            return cls(tracks[0])
 
         if user:
             tracks = user.tracks
@@ -123,7 +149,10 @@ class Playlist(dict):
     @classmethod
     def get(cls, query=None, user=None):
         if query and utils.isint(query):
-            return [cls(soundcloud_get('/playlists/%s' % query)[0])]
+            playlists = soundcloud_get('/playlists/%s' % query)
+            if not playlists:
+                raise PlaylistNotFoundError(query)
+            return cls(tracks[0])
 
         if user:
             playlists = user.playlists

@@ -85,15 +85,17 @@ class User(dict):
 
     @property
     def playlists(self):
-        return list(map(Playlist, soundcloud_get('/users/%s/playlists' % self['id'])))
+        return list(map(Playlist, soundcloud_get('/users/%s/playlists.json?limit=10' % self['id'])))
 
     @property
     def stream(self):
-        url = "https://api-v2.soundcloud.com/profile/soundcloud:users:%s?limit=50&offset=%s"
-        items = []
-        for i in range(4):
-            items.extend(requests.get(url % (self['id'], i * 50)).json()['collection'])
-        return list(map(Track, map(lambda x: x['track'], filter(lambda x: x['type'] in ['track', 'track-repost'], items))))
+        url = "https://api-v2.soundcloud.com/profile/soundcloud:users:%s?limit=100"
+        items = requests.get(url % self['id']).json()['collection']
+        return list(
+            map(Track,
+                map(lambda x: x['track'],
+                    filter(lambda x: x['type'] in ['track', 'track-repost'],
+                           items))))
 
 
 class Track(dict):

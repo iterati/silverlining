@@ -110,7 +110,9 @@ class Track(dict):
             tracks = soundcloud_get('/tracks/%s' % query)
             if not tracks:
                 raise TrackNotFoundError(query)
-            return [cls(tracks[0])]
+            track = cls(tracks[0])
+            tracks.extend(track.get_related())
+            return [cls(track) for track in tracks]
 
         if user:
             tracks = user.tracks
@@ -133,6 +135,11 @@ class Track(dict):
         tracks = [cls(i['origin']) for i in resp[0]['collection']]
         if query:
             tracks = utils.search_collection(tracks, query)
+        return tracks
+
+    def get_related(self):
+        resp = soundcloud_get('/tracks/%s/related' % self['id'])
+        tracks = [Track(i) for i in resp]
         return tracks
 
     def __repr__(self):

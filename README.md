@@ -97,13 +97,16 @@ Plays your silverlining playlist
 Plays your SoundCloud stream
 
 `silverlining p feedme`
-Plays tracks from first user matching 'feedme'
+Plays stream (posted and reposted) from first user matching 'feedme'
 
-`silverlining p feedme stream`
-Plays tracks (posted and reposted) from first user matching 'feedme'
+`silverlining p feedme t`
+Plays tracks from first user matching 'feedme'
 
 `silverlining p feedme p`
 Plays first playlist from first user matching 'feedme'
+
+`silverlining p https://soundcloud.com/feedme/patience`
+Plays the item at the URL (user's stream, track + related, or playlist's tracks)
 
 ## Playlist
 

@@ -161,7 +161,7 @@ class Playlist(dict):
             playlists = soundcloud_get('/playlists/%s' % query)
             if not playlists:
                 raise PlaylistNotFoundError(query)
-            return [cls(tracks[0])]
+            return cls(playlists[0]).tracks
 
         if user:
             playlists = user.playlists

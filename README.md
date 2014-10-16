@@ -23,11 +23,6 @@ Run it once to generate dotfiles (`~/.silverlining`):
 
 Enter your SoundCloud credentials and api key in `~/.silverlining/config.json`
 
-To allow the `u` (show url) command to copy the url to your clipboard, you will
-need to have brew installed and run:
-
-`brew install reattach-to-user-namespace --wrap-pbcopy-and-pbpaste`
-
 ```
 {
   "username": your_soundcloud_username,
@@ -36,6 +31,12 @@ need to have brew installed and run:
   "secret_key": your_soundcloud_app_secret_key
 }
 ```
+
+To allow the `u` (show url) command to copy the url to your clipboard, you will
+need to have brew installed and run (this is optional):
+
+`brew install reattach-to-user-namespace --wrap-pbcopy-and-pbpaste`
+
 
 Play music:
 

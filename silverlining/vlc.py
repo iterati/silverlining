@@ -114,6 +114,8 @@ class Player(object):
                      name=track['id'])
             self._tracks[int(track['id'])] = track
 
+        # wait 2s for vlc's playlist to update
+        time.sleep(2)
         self._sync_queue()
 
     def remove_track(self, track):

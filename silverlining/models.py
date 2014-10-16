@@ -110,7 +110,7 @@ class Track(dict):
             tracks = soundcloud_get('/tracks/%s' % query)
             if not tracks:
                 raise TrackNotFoundError(query)
-            return cls(tracks[0])
+            return [cls(tracks[0])]
 
         if user:
             tracks = user.tracks
@@ -154,7 +154,7 @@ class Playlist(dict):
             playlists = soundcloud_get('/playlists/%s' % query)
             if not playlists:
                 raise PlaylistNotFoundError(query)
-            return cls(tracks[0])
+            return [cls(tracks[0])]
 
         if user:
             playlists = user.playlists

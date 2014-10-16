@@ -67,23 +67,14 @@ class CommandMode(cmd.Cmd):
             if '-' in r:
                 s, e = r.split('-')
                 if s == '.':
-                    if allow_dot:
-                        s = self.player.current_track.idx
-                    else:
-                        raise CommandError("self reference not supported for this command")
+                    s = self.player.current_track.idx
                 if e == '.':
-                    if allow_dot:
-                        e = self.player.current_track.idx
-                    else:
-                        raise CommandError("self reference not supported for this command")
+                    e = self.player.current_track.idx
                 elif e == '*':
                     e = self.player.num_tracks
                 idxes.extend(range(int(s), int(e) + 1))
             elif r == '.':
-                if allow_dot:
-                    idxes.append(self.player.current_track.idx)
-                else:
-                    raise CommandError("self reference not supported for this command")
+                idxes.append(self.player.current_track.idx)
             else:
                 idxes.append(int(r))
 

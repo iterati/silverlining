@@ -105,7 +105,9 @@ def cli_search(username, category, query):
 
 
 def cli_play(username, category, query):
-    sys.stdout.write("Playing " + get_search_interp(username, category, query) + "\n")
+    sys.stdout.write("Playing " +
+                     get_search_interp(username, category, query, 'play') +
+                     "\n")
     try:
         items = get_search_results(username, category, query)
     except (models.UserNotFoundError, models.TrackNotFoundError, models.PlaylistNotFoundError) as e:
@@ -116,7 +118,9 @@ def cli_play(username, category, query):
         sys.stdout.write("Nothing found. Exiting.")
         return
 
-    if items[0]['kind'] == 'track':
+    if category == 'user':
+        tracks = items[0].stream
+    elif items[0]['kind'] == 'track':
         tracks = items
     else:
         tracks = items[0].tracks

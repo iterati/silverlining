@@ -1,4 +1,7 @@
+import requests
+
 from silverlining import (
+    CLIENT_ID,
     models,
     utils,
 )
@@ -8,7 +11,13 @@ from silverlining.models import get_silverlining_playlist
 def parse_search_arguments(args):
     if not args or args[0] == '':
         return None, 'sllist', None
-    if args[0] in ['me', 'stream']:
+    if args[0].startswith('http'):
+        # it's a url
+        resp = requests.get("https://api.soundcloud.com/resolve.json",
+                            params={'url': args[0], 'client_id': CLIENT_ID})
+        data = resp.json()
+        return None, data['kind'], data['id']
+    elif args[0] in ['me', 'stream']:
         if len(args) > 1:
             return None, 'stream', args[1]
         return None, 'stream', None
@@ -63,7 +72,7 @@ def get_search_results(username, category, query):
     return items
 
 
-def get_search_interp(username, category, query):
+def get_search_interp(username, category, query, action='search'):
     interp = ""
     if category == 'sllist':
         interp += "silverlining playlist"
@@ -74,8 +83,10 @@ def get_search_interp(username, category, query):
             interp = "%s's stream" % username
     elif username:
         if category == 'user':
-            interp += username
-            # interp += "%s's tracks" % username
+            if action == 'search':
+                interp += "users matching %s" % username
+            else:
+                interp += "%s's stream" % username
         else:
             interp += "%s's %ss" % (username, category)
     else:

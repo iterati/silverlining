@@ -1,8 +1,3 @@
-import collections
-import functools
-import os
-import sqlite3
-
 import requests
 import soundcloud
 

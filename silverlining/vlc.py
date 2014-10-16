@@ -249,6 +249,10 @@ class Player(object):
     @hotkey('u')
     def display_url(self):
         if self.current_track:
+            echo = subprocess.Popen(['echo', self.current_track['permalink_url']],
+                                    stdout=subprocess.PIPE)
+            copy = subprocess.check_output(['pbcopy'], stdin=echo.stdout)
+            echo.wait()
             return 'Soundcloud URL: %s' % self.current_track['permalink_url']
         else:
             return 'Not playing'

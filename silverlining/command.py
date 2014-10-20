@@ -20,7 +20,7 @@ class CommandMode(cmd.Cmd):
     prompt = '\n:'
 
     def __init__(self, player, *args, **kwargs):
-        super(CommandMode, self).__init__(*args, **kwargs)
+        cmd.Cmd.__init__(self, *args, **kwargs)
         self.player = player
         self._search_cache = []
         self.args = []

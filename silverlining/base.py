@@ -17,6 +17,18 @@ def parse_search_arguments(args):
                             params={'url': args[0], 'client_id': CLIENT_ID})
         data = resp.json()
         return None, data['kind'], data['id']
+    elif len(args) == 1 and utils.isint(args[0]):
+        # it's an id, try it as a track and then as a playlist
+        try:
+            track = models.Track.get_one(args[0])
+            return None, 'track', args[0]
+        except models.TrackNotFoundError:
+            pass
+        try:
+            playlist = models.Playlist.get_one(args[0])
+            return None, 'playlist', args[0]
+        except models.PlaylistNotFoundError:
+            raise Exception("Unable to find item with id %s" % args[0])
     elif args[0] in ['me', 'stream']:
         if len(args) > 1:
             return None, 'stream', args[1]

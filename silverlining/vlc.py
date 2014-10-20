@@ -40,14 +40,18 @@ class Player(object):
     _proc = None
     _history = []
 
-    def __init__(self):
-        self.command_mode = CommandMode(self)
+    def __init__(self, no_input=False):
         try:
             with open(HIST_FILE, 'rb') as f:
                 self._history = simplejson.loads(f.read())
                 self._history.reverse()
         except (IOError, simplejson.scanner.JSONDecodeError):
             pass
+
+        self.no_input = no_input
+        if not self.no_input:
+            self.command_mode = CommandMode(self)
+
         self.playlist = get_silverlining_playlist()
 
     def __enter__(self):
@@ -94,6 +98,9 @@ class Player(object):
         self.play()
         while self._running:
             self._update_status()
+            if self.no_input:
+                continue
+
             keypress = utils.getch(1)
             if keypress in HOTKEYS:
                 output = HOTKEYS[keypress](self)

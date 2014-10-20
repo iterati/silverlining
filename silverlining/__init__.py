@@ -82,6 +82,11 @@ from silverlining.vlc import (
 @click.argument('args', nargs=-1, required=False)
 def cli(cmd=None, args=None):
     """Main entry point of the script"""
+    if cmd == 'headless':
+        with Player(no_input=True) as player:
+            player.run()
+            return
+
     try:
         username, category, query = parse_search_arguments(args)
     except Exception as e:

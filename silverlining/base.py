@@ -31,8 +31,8 @@ def parse_search_arguments(args):
             raise Exception("Unable to find item with id %s" % args[0])
     elif args[0] in ['me', 'stream']:
         if len(args) > 1:
-            return None, 'stream', args[1]
-        return None, 'stream', None
+            return 'me', 'stream', args[1]
+        return 'me', 'stream', None
     elif args[0] in ['t', 'track', 'tracks']:
         if len(args) > 1:
             return None, 'track', args[1]
